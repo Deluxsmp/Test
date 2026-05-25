@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { background-color: #1a1a2e; font-family: sans-serif; margin: 0; padding: 20px; }
+        body { background-color: #1a1a2e; font-family: sans-serif; margin: 0; padding: 20px; color: white; }
         
+        /* মেইন নেভিগেশন স্টাইল */
         .nav-container { 
             display: flex; 
             overflow-x: auto; 
@@ -14,42 +15,54 @@
             padding: 10px; 
             border-radius: 12px;
             white-space: nowrap;
+            margin-bottom: 20px;
         }
-        
         .nav-container::-webkit-scrollbar { display: none; }
-
-        .item { 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            padding: 15px; 
-            color: #b0b0c3; 
-            text-decoration: none; 
-            font-size: 14px;
-            transition: 0.3s;
-            border-radius: 8px;
-            min-width: 60px;
-        }
-
+        .item { display: flex; flex-direction: column; align-items: center; padding: 15px; color: #b0b0c3; text-decoration: none; font-size: 14px; transition: 0.3s; border-radius: 8px; min-width: 60px; }
         .item:hover { background-color: #353550; color: white; }
         
-        .icon { font-size: 24px; margin-bottom: 5px; }
+        /* টিয়ার সেকশন স্টাইল */
+        .tier-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #161625;
+            border-radius: 10px;
+            justify-content: center;
+        }
+        .tier-btn {
+            padding: 8px 15px;
+            background-color: #252538;
+            color: #b0b0c3;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 13px;
+            transition: 0.3s;
+        }
+        .tier-btn:hover { background-color: #4a4a6a; color: white; }
     </style>
 </head>
 <body>
 
+    <!-- মেইন নেভিগেশন -->
     <div class="nav-container">
-        <a href="#" class="item"><span class="icon">🏠</span>Overview</a>
-        <a href="#" class="item"><span class="icon">🧪</span>NethPot</a>
-        <a href="#" class="item"><span class="icon">🔨</span>Mace</a>
-        <a href="#" class="item"><span class="icon">🔱</span>Spear</a>
-        <a href="#" class="item"><span class="icon">⚗️</span>Pot</a>
-        <a href="#" class="item"><span class="icon">🛡️</span>Tank</a>
-        <a href="#" class="item"><span class="icon">💎</span>Crystal</a>
-        <a href="#" class="item"><span class="icon">🌍</span>SMP</a>
-        <a href="#" class="item"><span class="icon">🧱</span>Build</a>
-        <a href="#" class="item"><span class="icon">❤️</span>UHC</a>
-        <a href="#" class="item"><span class="icon">🏃</span>Manhunt</a>
+        <a href="#" class="item">🏠 Overview</a>
+        <a href="#" class="item">🧪 NethPot</a>
+        <a href="#" class="item">🔨 Mace</a>
+        <a href="#" class="item">🔱 Spear</a>
+        <a href="#" class="item">⚗️ Pot</a>
+        <a href="#" class="item">🛡️ Tank</a>
+        <a href="#" class="item">💎 Crystal</a>
+    </div>
+
+    <!-- টিয়ার সিলেকশন সেকশন (যেকোনো পেজে এটি থাকবে) -->
+    <div class="tier-container">
+        <a href="#" class="tier-btn">Tier 1</a>
+        <a href="#" class="tier-btn">Tier 2</a>
+        <a href="#" class="tier-btn">Tier 3</a>
+        <a href="#" class="tier-btn">Tier 4</a>
+        <a href="#" class="tier-btn">Tier 5</a>
     </div>
 
 </body>
