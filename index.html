@@ -5,27 +5,49 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>গেম মোড পোর্টাল</title>
     <style>
-        body { font-family: sans-serif; background-color: #f4f4f9; padding: 20px; }
-        .container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; max-width: 1000px; margin: auto; }
-        .card { background: white; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.1); cursor: pointer; transition: 0.3s; text-decoration: none; color: #333; display: block; }
-        .card:hover { background: #007bff; color: white; transform: scale(1.05); }
+        body { font-family: sans-serif; background-color: #f4f4f9; padding: 20px; margin: 0; }
         h1 { text-align: center; color: #333; }
+        
+        /* এখানে ফ্লেক্সবক্স ব্যবহার করা হয়েছে */
+        .container { 
+            display: flex; 
+            flex-wrap: wrap; 
+            justify-content: center; 
+            gap: 10px; 
+            max-width: 800px; 
+            margin: auto; 
+        }
+
+        .card { 
+            background: white; 
+            padding: 15px 20px; 
+            border-radius: 8px; 
+            text-align: center; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+            text-decoration: none; 
+            color: #333; 
+            font-weight: bold;
+            transition: 0.3s;
+            min-width: 100px; /* কার্ডের সাইজ অনুযায়ী এটি ঠিক করুন */
+        }
+        
+        .card:hover { background: #007bff; color: white; }
     </style>
 </head>
 <body>
 
     <h1>আমাদের গেম মোডসমূহ</h1>
     <div class="container">
-        <a href="nethpot.html" class="card"><h3>NethPot</h3></a>
-        <a href="mace.html" class="card"><h3>Mace</h3></a>
-        <a href="spear.html" class="card"><h3>Spear</h3></a>
-        <a href="pot.html" class="card"><h3>Pot</h3></a>
-        <a href="tank.html" class="card"><h3>Tank</h3></a>
-        <a href="crystal.html" class="card"><h3>Crystal</h3></a>
-        <a href="smp.html" class="card"><h3>SMP</h3></a>
-        <a href="build.html" class="card"><h3>Build</h3></a>
-        <a href="uhc.html" class="card"><h3>UHC</h3></a>
-        <a href="manhunt.html" class="card"><h3>Manhunt</h3></a>
+        <a href="nethpot.html" class="card">NethPot</a>
+        <a href="mace.html" class="card">Mace</a>
+        <a href="spear.html" class="card">Spear</a>
+        <a href="pot.html" class="card">Pot</a>
+        <a href="tank.html" class="card">Tank</a>
+        <a href="crystal.html" class="card">Crystal</a>
+        <a href="smp.html" class="card">SMP</a>
+        <a href="build.html" class="card">Build</a>
+        <a href="uhc.html" class="card">UHC</a>
+        <a href="manhunt.html" class="card">Manhunt</a>
     </div>
 
 </body>
