@@ -115,6 +115,7 @@ client.on('messageCreate', async message => {
     }
 
     // ৩. .open-ticket <@user> <gamemode> কমান্ড (টেস্টারদের জন্য)
+    // ৩. .open-ticket <@user> <gamemode> কমান্ড (টেস্টারদের জন্য)
     if (commandName === 'open-ticket') {
         if (!message.member.roles.cache.has(TESTER_ROLE_ID) && !message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             return message.reply({ content: '❌ Only testers can use this command!' });
@@ -130,11 +131,34 @@ client.on('messageCreate', async message => {
         db.get(`SELECT * FROM players WHERE discord_id = ?`, [targetUser.id], async (err, row) => {
             if (!row) return message.reply({ content: '❌ This player is not registered!' });
 
+            // কিউ থেকে ইউজারকে রিমুভ করা এবং কিউ মেসেজ লাইভ আপডেট করা
             if (queues.has(gameMode)) {
                 let list = queues.get(gameMode);
                 const qIndex = list.findIndex(p => p.userId === targetUser.id);
                 if (qIndex !== -1) {
-                    list.splice(qIndex, 1);
+                    list.splice(qIndex, 1); // তালিকা থেকে রিমুভ করা হলো (অটো পজিশন শিফট হবে)
+
+                    // কিউ মেসেজটি চ্যানেল থেকে খুঁজে বের করে লাইভ আপডেট করা
+                    try {
+                        const fetchedMessages = await message.channel.messages.fetch({ limit: 50 });
+                        const queueMsg = fetchedMessages.find(m => 
+                            m.embeds.length > 0 && 
+                            m.embeds[0].title && 
+                            m.embeds[0].title.toLowerCase().includes(gameMode)
+                        );
+
+                        if (queueMsg) {
+                            let desc = list.length === 0 ? 'No one in the queue yet.' : list.map((p, idx) => `**#${idx + 1}** - <@${p.userId}> (${p.ign})`).join('\n');
+                            const updatedEmbed = new EmbedBuilder()
+                                .setTitle(`🎮 Queue: ${gameMode.toUpperCase()}`)
+                                .setDescription(desc)
+                                .setColor('Blue');
+
+                            await queueMsg.edit({ embeds: [updatedEmbed] });
+                        }
+                    } catch (e) {
+                        console.error('Failed to update queue message live:', e);
+                    }
                 }
             }
 
