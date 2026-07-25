@@ -122,46 +122,72 @@ client.on('messageCreate', async message => {
         }
 
         const targetUser = message.mentions.users.first();
-        const gameMode = args[1]?.toLowerCase();
+        let rawGameMode = args[1]?.toLowerCase();
 
-        if (!targetUser || !gameMode) {
-            return message.reply({ content: '❌ Usage format: `.open-ticket @user uhc`' });
+        if (!targetUser || !rawGameMode) {
+            return message.reply({ content: '❌ Usage format: `.open-ticket @user axe_shield`' });
+        }
+
+        // গেমমোডের নাম সঠিকভাবে ম্যাপ করার জন্য
+        let gameMode = rawGameMode;
+        if (rawGameMode.includes('axe') || rawGameMode.includes('shield')) gameMode = 'axe_shield';
+        else if (rawGameMode.includes('neth') || rawGameMode.includes('pot')) gameMode = 'neth_pot';
+        else if (rawGameMode.includes('dia')) gameMode = 'dia_pot';
+        else if (rawGameMode.includes('smp')) gameMode = 'smp_kit';
+        else if (rawGameMode.includes('mace')) gameMode = 'mace';
+        else if (rawGameMode.includes('sword')) gameMode = 'sword';
+        else if (rawGameMode.includes('uhc')) gameMode = 'uhc';
+        else if (rawGameMode.includes('cpvp')) gameMode = 'cpvp';
+
+        if (!GAMEMODE_ROLES[gameMode]) {
+            return message.reply({ content: '❌ Please provide a valid gamemode! (e.g., axe_shield, uhc, cpvp)' });
         }
 
         db.get(`SELECT * FROM players WHERE discord_id = ?`, [targetUser.id], async (err, row) => {
             if (!row) return message.reply({ content: '❌ This player is not registered!' });
 
-            // কিউ থেকে ইউজারকে রিমুভ করা এবং কিউ মেসেজ লাইভ আপডেট করা
+            // ১. ডেটাবেজের ম্যাপ থেকে ইউজারকে রিমুভ করা
             if (queues.has(gameMode)) {
                 let list = queues.get(gameMode);
                 const qIndex = list.findIndex(p => p.userId === targetUser.id);
                 if (qIndex !== -1) {
-                    list.splice(qIndex, 1); // তালিকা থেকে রিমুভ করা হলো (অটো পজিশন শিফট হবে)
+                    list.splice(qIndex, 1); 
+                }
 
-                    // কিউ মেসেজটি চ্যানেল থেকে খুঁজে বের করে লাইভ আপডেট করা
-                    try {
-                        const fetchedMessages = await message.channel.messages.fetch({ limit: 50 });
-                        const queueMsg = fetchedMessages.find(m => 
-                            m.embeds.length > 0 && 
-                            m.embeds[0].title && 
-                            m.embeds[0].title.toLowerCase().includes(gameMode)
-                        );
+                // ২. সার্ভারের সব টেক্সট চ্যানেলে খুঁজে কিউ মেসেজ লাইভ আপডেট করা
+                try {
+                    const channels = await message.guild.channels.fetch();
+                    for (const [channelId, ch] of channels) {
+                        if (ch && ch.type === ChannelType.GuildText) {
+                            try {
+                                const fetchedMessages = await ch.messages.fetch({ limit: 30 });
+                                const queueMsg = fetchedMessages.find(m => 
+                                    m.embeds.length > 0 && 
+                                    m.embeds[0].title && 
+                                    m.embeds[0].title.toLowerCase().includes(gameMode.replace('_', ' '))
+                                );
 
-                        if (queueMsg) {
-                            let desc = list.length === 0 ? 'No one in the queue yet.' : list.map((p, idx) => `**#${idx + 1}** - <@${p.userId}> (${p.ign})`).join('\n');
-                            const updatedEmbed = new EmbedBuilder()
-                                .setTitle(`🎮 Queue: ${gameMode.toUpperCase()}`)
-                                .setDescription(desc)
-                                .setColor('Blue');
+                                if (queueMsg) {
+                                    let desc = list.length === 0 ? 'No one in the queue yet.' : list.map((p, idx) => `**#${idx + 1}** - <@${p.userId}> (${p.ign})`).join('\n');
+                                    const updatedEmbed = new EmbedBuilder()
+                                        .setTitle(`🎮 Queue: ${gameMode.toUpperCase()}`)
+                                        .setDescription(desc)
+                                        .setColor('Blue');
 
-                            await queueMsg.edit({ embeds: [updatedEmbed] });
+                                    await queueMsg.edit({ embeds: [updatedEmbed] });
+                                    break; // মেসেজ পেয়ে গেলে লুপ থেমে যাবে
+                                }
+                            } catch (err) {
+                                // যে চ্যানেলে বট পার্মিশন নেই সেটার এরর ইগনোর করবে
+                            }
                         }
-                    } catch (e) {
-                        console.error('Failed to update queue message live:', e);
                     }
+                } catch (e) {
+                    console.error('Failed to update queue message live across channels:', e);
                 }
             }
 
+            // ৩. টিকিট চ্যানেল তৈরি করা
             try {
                 const guild = message.guild;
                 const channel = await guild.channels.create({
