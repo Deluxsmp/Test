@@ -249,6 +249,45 @@ client.on('messageCreate', async message => {
 
         return message.reply({ embeds: [helpEmbed] });
     }
+
+// ৮. .set-tester <@user> কমান্ড (টেস্টার রোল দেওয়ার জন্য - শুধুমাত্র এডমিনদের জন্য)
+    if (commandName === 'set-tester') {
+        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+            return message.reply({ content: '❌ Only administrators can use this command!' });
+        }
+
+        const targetMember = message.mentions.members.first();
+        if (!targetMember) {
+            return message.reply({ content: '❌ Please mention a user! Usage: `.set-tester @user`' });
+        }
+
+        try {
+            await targetMember.roles.add(TESTER_ROLE_ID);
+            return message.reply({ content: `✅ Successfully gave the tester role to <@${targetMember.id}>!` });
+        } catch (error) {
+            return message.reply({ content: '❌ Failed to add the tester role. Please check bot permissions and role hierarchy.' });
+        }
+    }
+
+    // ৯. .remove-tester <@user> কমান্ড (টেস্টার রোল রিমুভ করার জন্য - শুধুমাত্র এডমিনদের জন্য)
+    if (commandName === 'remove-tester') {
+        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+            return message.reply({ content: '❌ Only administrators can use this command!' });
+        }
+
+        const targetMember = message.mentions.members.first();
+        if (!targetMember) {
+            return message.reply({ content: '❌ Please mention a user! Usage: `.remove-tester @user`' });
+        }
+
+        try {
+            await targetMember.roles.remove(TESTER_ROLE_ID);
+            return message.reply({ content: `✅ Successfully removed the tester role from <@${targetMember.id}>!` });
+        } catch (error) {
+            return message.reply({ content: '❌ Failed to remove the tester role. Please check bot permissions and role hierarchy.' });
+        }
+    }
+    
     // ৭. .tester-stats কমান্ড
     if (commandName === 'tester-stats') {
         const tester = message.mentions.users.first() || message.author;
