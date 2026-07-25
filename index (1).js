@@ -169,60 +169,57 @@ client.on('messageCreate', async message => {
         });
     }
 
-    // ৪. .result <@user> <tier> <points> কমান্ড (টেস্টারদের জন্য)
-    // ৪. result <user> <tier> <points> কমান্ড (মডারেটর বা টেস্টারদের জন্য)
-    // ৪. .result কমান্ড হ্যান্ডলার
-if (commandName === 'result') {
-    if (!message.member.roles.cache.has(TESTER_ROLE_ID) && !message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-        return;
-    }
+    /// ৪. .result <@user> কমান্ড (টেস্টারদের জন্য GUI ওপেন করবে)
+    if (commandName === 'result') {
+        if (!message.member.roles.cache.has(TESTER_ROLE_ID) && !message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+            return message.reply({ content: '❌ এই কমান্ডটি শুধু টেস্টাররা ব্যবহার করতে পারবেন!' });
+        }
 
-    const targetUser = message.mentions.users.first();
-    const playerIgn = args[1];      
-    const gamemode = args[2];     
-    const achievedRank = args[3]; 
-    const points = parseInt(args[4]); 
+        const targetUser = message.mentions.users.first();
+        if (!targetUser) {
+            return message.reply({ content: '❌ সঠিক নিয়মে ব্যবহার করুন: `.result @user`' });
+        }
 
-    if (!targetUser || !playerIgn || !gamemode || !achievedRank || isNaN(points)) {
-        return;
-    }
-
-    db.get(`SELECT * FROM players WHERE discord_id = ?`, [targetUser.id], async (err, playerRow) => {
-        if (err || !playerRow) return;
-
-        db.run(`UPDATE players SET points = ? WHERE discord_id = ?`, [points, targetUser.id], async (err) => {
-            if (err) return;
-
-            try {
-                // আপনার নির্দিষ্ট রেজাল্ট চ্যানেলের আইডি
-                const resultChannelId = '1522042202874167549'; 
-                const resultChannel = await message.guild.channels.fetch(resultChannelId);
-                
-                if (resultChannel) {
-                    const resultEmbed = new EmbedBuilder()
-                        .setColor('Gold')
-                        .setTitle('🏆 Test Result & Evaluation')
-                        .addFields(
-                            { name: '🕹️ Tester', value: `<@${message.author.id}>`, inline: true },
-                            { name: '👤 Player IGN', value: `**${playerIgn}**`, inline: true },
-                            { name: '🎮 Gamemode', value: `**${gamemode}**`, inline: true },
-                            { name: '🏆 Achieved Rank', value: `**${achievedRank}**`, inline: true },
-                            { name: '⭐ Points', value: `**${points}**`, inline: true }
-                        )
-                        .setTimestamp();
-
-                    // শুধু নির্দিষ্ট চ্যানেলে এম্বেড পাঠিয়ে দেবে, বর্তমান চ্যাটে কিচ্ছু দেখাবে না
-                    await resultChannel.send({ content: `<@${targetUser.id}>`, embeds: [resultEmbed] });
-                    
-                    // ইচ্ছা হলে আপনার দেওয়া কমান্ডের মেসেজটি চ্যাট থেকে ডিলিট করে দিতে পারেন
-                    await message.delete().catch(() => {});
-                }
-            } catch (error) {
-                console.error(error);
+        // ডাটাবেজ থেকে প্লেয়ারের IGN চেক করা
+        db.get(`SELECT * FROM players WHERE discord_id = ?`, [targetUser.id], async (err, playerRow) => {
+            if (err || !playerRow) {
+                return message.reply({ content: '❌ এই প্লেয়ারটি ডাটাবেজে রেজিস্টার্ড নয়!' });
             }
+
+            // মোডাল (GUI) তৈরি করা
+            const modal = new ModalBuilder()
+                .setCustomId(`result_modal_${targetUser.id}`)
+                .setTitle('🏆 Test Result Submission');
+
+            const gamemodeInput = new TextInputBuilder()
+                .setCustomId('gamemode_input')
+                .setLabel('Gamemode (e.g., uhc, cpvp, neth_pot)')
+                .setStyle(TextInputStyle.Short)
+                .setRequired(true);
+
+            const rankInput = new TextInputBuilder()
+                .setCustomId('rank_input')
+                .setLabel('Achieved Rank (e.g., Tier-1, Gold)')
+                .setStyle(TextInputStyle.Short)
+                .setRequired(true);
+
+            const pointsInput = new TextInputBuilder()
+                .setCustomId('points_input')
+                .setLabel('Points (Number only)')
+                .setStyle(TextInputStyle.Short)
+                .setRequired(true);
+
+            modal.addComponents(
+                new ActionRowBuilder().addComponents(gamemodeInput),
+                new ActionRowBuilder().addComponents(rankInput),
+                new ActionRowBuilder().addComponents(pointsInput)
+            );
+
+            // টেস্টারকে মোডাল বা ফর্ম দেখানো
+            await message.delete().catch(() => {});
+            return await interactionShowModal(message, modal); // Discord.js-এ মেসেজের মাধ্যমে মোডাল সরাসরি দেখানো যায় না, তাই নিচে ইন্টারঅ্যাকশন বা বাটন বা আলাদা হ্যান্ডলার লাগে।
         });
-    });
-}
+    }
 
     // ৫. .leaderboard কমান্ড
     if (commandName === 'leaderboard') {
