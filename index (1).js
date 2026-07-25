@@ -18,6 +18,7 @@ const client = new Client({
 // টেস্টার এবং এডমিন রোল আইডি
 const TESTER_ROLE_ID = '1530471633737875467';
 const ADMIN_ROLE_ID = '1518301359332655144';
+const RESULT_CHANNEL_ID = '1522942202874167549';
 
 // গেমমোড অনুযায়ী ডিসকর্ড রোল আইডিগুলো
 const GAMEMODE_ROLES = {
@@ -169,24 +170,49 @@ client.on('messageCreate', async message => {
     }
 
     // ৪. .result <@user> <tier> <points> কমান্ড (টেস্টারদের জন্য)
-    if (commandName === 'result') {
-        if (!message.member.roles.cache.has(TESTER_ROLE_ID) && !message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return message.reply({ content: '❌ এই কমান্ডটি শুধু টেস্টারদের জন্য!' });
-        }
-
-        const player = message.mentions.users.first();
-        const tier = args[1];
-        const points = parseInt(args[2]);
-
-        if (!player || !tier || isNaN(points)) {
-            return message.reply({ content: '❌ সঠিক নিয়মে ব্যবহার করুন: `.result @user Tier4 50`' });
-        }
-
-        db.run(`UPDATE players SET points = ? WHERE discord_id = ?`, [points, player.id], (err) => {
-            if (err) return message.reply({ content: 'রেজাল্ট সেভ করতে সমস্যা হয়েছে।' });
-            return message.reply(`✅ Result Saved! Player: <@${player.id}> | Tier: **${tier}** | Points: **${points}**`);
-        });
+    // ৪. result <user> <tier> <points> কমান্ড (মডারেটর বা টেস্টারদের জন্য)
+if (commandName === 'result') {
+    if (!message.member.roles.cache.has(TESTER_ROLE_ID) && !message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+        return message.reply({ content: '❌ এই কমান্ডটি শুধু টেস্টিং টিম ব্যবহার করতে পারবে!' });
     }
+
+    const targetUser = message.mentions.users.first();
+    const tier = args[1];
+    const points = parseInt(args[2]);
+
+    if (!targetUser || !tier || isNaN(points)) {
+        return message.reply({ content: '❌ সঠিক নিয়মে ব্যবহার করুন: `.result @user Tier4 50`' });
+    }
+
+    db.get('SELECT * FROM players WHERE discord_id = ?', [targetUser.id], (err, playerRow) => {
+        if (err || !playerRow) {
+            return message.reply({ content: '❌ এই প্লেয়ারটি ডাটাবেজে রেজিস্টার্ড নয়!' });
+        }
+
+        db.run('UPDATE players SET points = ? WHERE discord_id = ?', [points, targetUser.id], (err) => {
+            if (err) return message.reply({ content: '❌ রেজাল্ট সেভ করতে সমস্যা হয়েছে!' });
+
+            // নির্দিষ্ট রেজাল্ট চ্যানেলে ইম্বেড পাঠানো
+            const resultChannel = message.guild.channels.cache.get(RESULT_CHANNEL_ID);
+            if (resultChannel) {
+                const resultEmbed = new EmbedBuilder()
+                    .setColor('Gold')
+                    .setTitle('🏆 Test Result & Evaluation')
+                    .addFields(
+                        { name: '👥 Tester', value: `<@${message.author.id}>`, inline: true },
+                        { name: '🎮 Player IGN', value: playerRow.ign, inline: true },
+                        { name: '📊 Achieved Rank', value: `**${tier}**`, inline: true },
+                        { name: '⭐ Points', value: `**${points}**`, inline: true }
+                    )
+                    .setTimestamp();
+
+                resultChannel.send({ content: `<@${targetUser.id}>`, embeds: [resultEmbed] });
+            }
+
+            return message.reply({ content: `✅ রেজাল্ট সফলভাবে সেভ এবং পাঠানো হয়েছে! Player: **${playerRow.ign}** | Tier: **${tier}** | Points: **${points}**` });
+        });
+    });
+}
 
     // ৫. .leaderboard কমান্ড
     if (commandName === 'leaderboard') {
