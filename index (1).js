@@ -171,57 +171,55 @@ client.on('messageCreate', async message => {
 
     // ৪. .result <@user> <tier> <points> কমান্ড (টেস্টারদের জন্য)
     // ৪. result <user> <tier> <points> কমান্ড (মডারেটর বা টেস্টারদের জন্য)
+    // ৪. .result কমান্ড হ্যান্ডলার
 if (commandName === 'result') {
     if (!message.member.roles.cache.has(TESTER_ROLE_ID) && !message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-        return message.reply({ content: `❌ এই কমান্ডটি শুধু টেস্টিং টিম ব্যবহার করতে পারবে!` });
+        return;
     }
 
-    const targetUser = message.mentions.users.first(); // ডিসকর্ড ইউজার মেনশন
-    const playerIgn = args[1];      // প্লেয়ারের ইন-গেম নাম (IGN)
-    const gamemode = args[2];     // গেম মোড
-    const achievedRank = args[3]; // অর্জন করা র‍্যাংক
-    const points = parseInt(args[4]); // পয়েন্ট (সংখ্যা)
+    const targetUser = message.mentions.users.first();
+    const playerIgn = args[1];      
+    const gamemode = args[2];     
+    const achievedRank = args[3]; 
+    const points = parseInt(args[4]); 
 
     if (!targetUser || !playerIgn || !gamemode || !achievedRank || isNaN(points)) {
-        return message.reply({ content: `❌ সঠিক নিয়মে ব্যবহার করুন: .result @user [Player IGN] [Gamemode] [Achieved Rank] [Points]` });
+        return;
     }
 
-    // আপনার ডাটাবেজে ডিসকর্ড আইডি দিয়ে প্লেয়ার খোঁজা হচ্ছে
-    db.get(`SELECT * FROM players WHERE discord_id = ?`, [targetUser.id], (err, playerRow) => {
-        if (err) {
-            console.error(err);
-            return message.reply({ content: `❌ ডাটাবেজ কুয়েরি করতে গিয়ে সমস্যা হয়েছে!` });
-        }
+    db.get(`SELECT * FROM players WHERE discord_id = ?`, [targetUser.id], async (err, playerRow) => {
+        if (err || !playerRow) return;
 
-        if (!playerRow) {
-            return message.reply({ content: `❌ এই প্লেয়ারটি ডাটাবেজে রেজিস্টার্ড না!` });
-        }
+        db.run(`UPDATE players SET points = ? WHERE discord_id = ?`, [points, targetUser.id], async (err) => {
+            if (err) return;
 
-        db.run(`UPDATE players SET points = ? WHERE discord_id = ?`, [points, targetUser.id], (err) => {
-            if (err) {
-                console.error(err);
-                return message.reply({ content: `❌ পয়েন্ট সেভ করতে সমস্যা হয়েছে!` });
+            try {
+                // আপনার নির্দিষ্ট রেজাল্ট চ্যানেলের আইডি
+                const resultChannelId = '1522042202874167549'; 
+                const resultChannel = await message.guild.channels.fetch(resultChannelId);
+                
+                if (resultChannel) {
+                    const resultEmbed = new EmbedBuilder()
+                        .setColor('Gold')
+                        .setTitle('🏆 Test Result & Evaluation')
+                        .addFields(
+                            { name: '🕹️ Tester', value: `<@${message.author.id}>`, inline: true },
+                            { name: '👤 Player IGN', value: `**${playerIgn}**`, inline: true },
+                            { name: '🎮 Gamemode', value: `**${gamemode}**`, inline: true },
+                            { name: '🏆 Achieved Rank', value: `**${achievedRank}**`, inline: true },
+                            { name: '⭐ Points', value: `**${points}**`, inline: true }
+                        )
+                        .setTimestamp();
+
+                    // শুধু নির্দিষ্ট চ্যানেলে এম্বেড পাঠিয়ে দেবে, বর্তমান চ্যাটে কিচ্ছু দেখাবে না
+                    await resultChannel.send({ content: `<@${targetUser.id}>`, embeds: [resultEmbed] });
+                    
+                    // ইচ্ছা হলে আপনার দেওয়া কমান্ডের মেসেজটি চ্যাট থেকে ডিলিট করে দিতে পারেন
+                    await message.delete().catch(() => {});
+                }
+            } catch (error) {
+                console.error(error);
             }
-
-            const resultChannel = message.guild.channels.cache.get('1522942202874167549');
-            if (resultChannel) {
-                const resultEmbed = new EmbedBuilder()
-                    .setColor('Gold')
-                    .setTitle('🏆 Test Result & Evaluation')
-                    .addFields(
-                        { name: '🕹️ Tester', value: `<@${message.author.id}>`, inline: true },
-                        { name: '👤 Player IGN', value: `**${playerIgn}**`, inline: true },
-                        { name: '🎮 Gamemode', value: `**${gamemode}**`, inline: true },
-                        { name: '🏆 Achieved Rank', value: `**${achievedRank}**`, inline: true },
-                        { name: '⭐ Points', value: `**${points}**`, inline: true }
-                    )
-                    .setTimestamp();
-
-                // এখানে প্লেয়ারকে মেনশন করেও পাঠানো হবে আবার এম্বেডও যাবে
-                resultChannel.send({ content: `<@${targetUser.id}>`, embeds: [resultEmbed] });
-            }
-
-            return message.reply({ content: `✅ টেস্ট সফলভাবে চেক এবং পাঠানো হয়েছে! Player: **${playerIgn}** | Rank: **${achievedRank}** | Points: **${points}**` });
         });
     });
 }
