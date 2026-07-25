@@ -203,28 +203,40 @@ client.on('messageCreate', async message => {
     }
 
     // ৫. .profile কমান্ড (সকল ইউজারদের জন্য নিজের প্রোফাইল দেখার ব্যবস্থা)
-    if (commandName === 'profile') {
-        const targetUser = message.mentions.users.first() || message.author;
+    // ২. .profile কমান্ড (সকল ইউজারের জন্য নিজের প্রোফাইল দেখার ব্যবস্থা)
+if (commandName === 'profile') {
+    const targetUser = message.mentions.users.first() || message.author;
 
-        db.get(`SELECT * FROM players WHERE discord_id = ?`, [targetUser.id], async (err, playerRow) => {
-            if (err || !playerRow) {
-                return message.reply({ content: `❌ No registered profile found for ${targetUser.id === message.author.id ? 'you' : 'this player'}!` });
-            }
+    db.get('SELECT * FROM players WHERE discord_id = ?', [targetUser.id], async (err, playerRow) => {
+        if (err || !playerRow) {
+            return message.reply({ content: `❌ No registered profile found for ${targetUser.id === message.author.id ? 'you' : 'this player'}!` });
+        }
 
-            const profileEmbed = new EmbedBuilder()
-                .setColor('Green')
-                .setTitle(`👤 Player Profile: ${playerRow.ign}`)
-                .addFields(
-                    { name: '🎮 In-Game Name (IGN)', value: playerRow.ign, inline: true },
-                    { name: '🌍 Region / Country', value: playerRow.region, inline: true },
-                    { name: '📦 Launcher Version', value: playerRow.version, inline: true },
-                    { name: '⭐ Points', value: `${playerRow.points || 0}`, inline: true }
-                )
-                .setTimestamp();
+        // গেম মোডগুলোর টিয়ার চেক করা (ডাটাবেজে কলাম না থাকলে N/A দেখাবে)
+        const getTier = (tier) => tier ? tier : 'N/A';
 
-            return message.reply({ embeds: [profileEmbed] });
-        });
-    }
+        const profileEmbed = new EmbedBuilder()
+            .setColor('Green')
+            .setTitle(`👤 Player Profile: ${playerRow.ign}`)
+            .addFields(
+                { name: '🎮 In-Game Name (IGN)', value: playerRow.ign, inline: true },
+                { name: '🌍 Region / Country', value: playerRow.region || 'N/A', inline: true },
+                { name: '💻 Launcher Version', value: playerRow.version || 'N/A', inline: true },     
+                // গেম মোড টিয়ার ফিল্ডগুলো
+                { name: '🪓 Axe And Shield', value: getTier(playerRow.axe_shield), inline: true },
+                { name: '🧪 Neth Pot', value: getTier(playerRow.neth_pot), inline: true },
+                { name: '🔷 Dia Pot', value: getTier(playerRow.dia_pot), inline: true },
+                { name: '🛡️ Smp Kit', value: getTier(playerRow.smp_kit), inline: true },
+                { name: '🗡️ Mace', value: getTier(playerRow.mace), inline: true },
+                { name: '❌ Sword', value: getTier(playerRow.sword), inline: true },
+                { name: '🌐 Uhc', value: getTier(playerRow.uhc), inline: true },
+                { name: '💥 Cpvp', value: getTier(playerRow.cpvp), inline: true }
+            )
+            .setTimestamp();
+
+        return message.reply({ embeds: [profileEmbed] });
+    });
+}
 
     // ৬. .leaderboard কমান্ড
     if (commandName === 'leaderboard') {
