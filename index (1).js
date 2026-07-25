@@ -201,6 +201,7 @@ if (commandName === 'result') {
                     .addFields(
                         { name: '👥 Tester', value: `<@${message.author.id}>`, inline: true },
                         { name: '🎮 Player IGN', value: playerRow.ign, inline: true },
+                        { name: '🧱 Gamemode', value: `**gamemode**`, inline: true }
                         { name: '📊 Achieved Rank', value: `**${tier}**`, inline: true },
                         { name: '⭐ Points', value: `**${points}**`, inline: true }
                     )
