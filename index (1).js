@@ -173,44 +173,55 @@ client.on('messageCreate', async message => {
     // ৪. result <user> <tier> <points> কমান্ড (মডারেটর বা টেস্টারদের জন্য)
 if (commandName === 'result') {
     if (!message.member.roles.cache.has(TESTER_ROLE_ID) && !message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-        return message.reply({ content: '❌ এই কমান্ডটি শুধু টেস্টিং টিম ব্যবহার করতে পারবে!' });
+        return message.reply({ content: `❌ এই কমান্ডটি শুধু টেস্টিং টিম ব্যবহার করতে পারবে!` });
     }
 
-    const targetUser = message.mentions.users.first();
-    const tier = args[1];
-    const points = parseInt(args[2]);
+    const targetUser = message.mentions.users.first(); // ডিসকর্ড ইউজার মেনশন
+    const playerIgn = args[1];      // প্লেয়ারের ইন-গেম নাম (IGN)
+    const gamemode = args[2];     // গেম মোড
+    const achievedRank = args[3]; // অর্জন করা র‍্যাংক
+    const points = parseInt(args[4]); // পয়েন্ট (সংখ্যা)
 
-    if (!targetUser || !tier || isNaN(points)) {
-        return message.reply({ content: '❌ সঠিক নিয়মে ব্যবহার করুন: `.result @user Tier4 50`' });
+    if (!targetUser || !playerIgn || !gamemode || !achievedRank || isNaN(points)) {
+        return message.reply({ content: `❌ সঠিক নিয়মে ব্যবহার করুন: .result @user [Player IGN] [Gamemode] [Achieved Rank] [Points]` });
     }
 
-    db.get('SELECT * FROM players WHERE discord_id = ?', [targetUser.id], (err, playerRow) => {
-        if (err || !playerRow) {
-            return message.reply({ content: '❌ এই প্লেয়ারটি ডাটাবেজে রেজিস্টার্ড নয়!' });
+    // আপনার ডাটাবেজে ডিসকর্ড আইডি দিয়ে প্লেয়ার খোঁজা হচ্ছে
+    db.get(`SELECT * FROM players WHERE discord_id = ?`, [targetUser.id], (err, playerRow) => {
+        if (err) {
+            console.error(err);
+            return message.reply({ content: `❌ ডাটাবেজ কুয়েরি করতে গিয়ে সমস্যা হয়েছে!` });
         }
 
-        db.run('UPDATE players SET points = ? WHERE discord_id = ?', [points, targetUser.id], (err) => {
-            if (err) return message.reply({ content: '❌ রেজাল্ট সেভ করতে সমস্যা হয়েছে!' });
+        if (!playerRow) {
+            return message.reply({ content: `❌ এই প্লেয়ারটি ডাটাবেজে রেজিস্টার্ড না!` });
+        }
 
-            // নির্দিষ্ট রেজাল্ট চ্যানেলে ইম্বেড পাঠানো
-            const resultChannel = message.guild.channels.cache.get(RESULT_CHANNEL_ID);
+        db.run(`UPDATE players SET points = ? WHERE discord_id = ?`, [points, targetUser.id], (err) => {
+            if (err) {
+                console.error(err);
+                return message.reply({ content: `❌ পয়েন্ট সেভ করতে সমস্যা হয়েছে!` });
+            }
+
+            const resultChannel = message.guild.channels.cache.get('1522042202874167549');
             if (resultChannel) {
                 const resultEmbed = new EmbedBuilder()
                     .setColor('Gold')
                     .setTitle('🏆 Test Result & Evaluation')
                     .addFields(
-                        { name: '👥 Tester', value: `<@${message.author.id}>`, inline: true },
-                        { name: '🎮 Player IGN', value: playerRow.ign, inline: true },
-                        { name: '🧱 Gamemode', value: `**gamemode**`, inline: true }
-                        { name: '📊 Achieved Rank', value: `**${tier}**`, inline: true },
+                        { name: '🕹️ Tester', value: `<@${message.author.id}>`, inline: true },
+                        { name: '👤 Player IGN', value: `**${playerIgn}**`, inline: true },
+                        { name: '🎮 Gamemode', value: `**${gamemode}**`, inline: true },
+                        { name: '🏆 Achieved Rank', value: `**${achievedRank}**`, inline: true },
                         { name: '⭐ Points', value: `**${points}**`, inline: true }
                     )
                     .setTimestamp();
 
+                // এখানে প্লেয়ারকে মেনশন করেও পাঠানো হবে আবার এম্বেডও যাবে
                 resultChannel.send({ content: `<@${targetUser.id}>`, embeds: [resultEmbed] });
             }
 
-            return message.reply({ content: `✅ রেজাল্ট সফলভাবে সেভ এবং পাঠানো হয়েছে! Player: **${playerRow.ign}** | Tier: **${tier}** | Points: **${points}**` });
+            return message.reply({ content: `✅ টেস্ট সফলভাবে চেক এবং পাঠানো হয়েছে! Player: **${playerIgn}** | Rank: **${achievedRank}** | Points: **${points}**` });
         });
     });
 }
