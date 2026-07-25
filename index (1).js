@@ -203,7 +203,7 @@ if (commandName === 'result') {
                 return message.reply({ content: `❌ পয়েন্ট সেভ করতে সমস্যা হয়েছে!` });
             }
 
-            const resultChannel = message.guild.channels.cache.get('1522042202874167549');
+            const resultChannel = message.guild.channels.cache.get('1522942202874167549');
             if (resultChannel) {
                 const resultEmbed = new EmbedBuilder()
                     .setColor('Gold')
